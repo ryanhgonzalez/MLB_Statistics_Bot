@@ -1,0 +1,19 @@
+{
+  "name": "mlb_statistics_bot",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "grammy": "^1.38.1",
+    "mlb-stats-api": "^2.0.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
+    "@types/node": "^24.3.0"
+  }
+}
