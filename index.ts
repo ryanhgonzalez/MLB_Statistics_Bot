@@ -1,44 +1,12 @@
 import { Bot, InlineKeyboard } from "grammy";
 import dotenv from "dotenv";
 import MLBStatsAPI from "mlb-stats-api";
+import { TEAM_ABBREVIATIONS } from "./constants.js";
 
 dotenv.config();
 const mlb = new MLBStatsAPI();
 const token = process.env.TELEGRAM_BOT_AUTH_TOKEN!;
 const bot = new Bot(token);
-
-const teamAbbreviations: Record<string, string> = {
-  "Boston Red Sox": "BOS",
-  "New York Yankees": "NYY",
-  "Tampa Bay Rays": "TB",
-  "Toronto Blue Jays": "TOR",
-  "Baltimore Orioles": "BAL",
-  "Washington Nationals": "WSH",
-  "Atlanta Braves": "ATL",
-  "Miami Marlins": "MIA",
-  "New York Mets": "NYM",
-  "Philadelphia Phillies": "PHI",
-  "Chicago White Sox": "CWS",
-  "Minnesota Twins": "MIN",
-  "Cleveland Guardians": "CLE",
-  "Detroit Tigers": "DET",
-  "Kansas City Royals": "KC",
-  "Cincinnati Reds": "CIN",
-  "St. Louis Cardinals": "STL",
-  "Pittsburgh Pirates": "PIT",
-  "Houston Astros": "HOU",
-  "Texas Rangers": "TEX",
-  "Los Angeles Angels": "LAA",
-  "Seattle Mariners": "SEA",
-  "Athletics": "ATH",
-  "Los Angeles Dodgers": "LAD",
-  "San Francisco Giants": "SF",
-  "San Diego Padres": "SD",
-  "Colorado Rockies": "COL",
-  "Arizona Diamondbacks": "ARI",
-  "Milwaukee Brewers": "MIL",
-  "Chicago Cubs": "CHC"
-};
 
 // Format start time in CT and return hour bucket (e.g. "6 PM")
 function getHourBucket(dateStr: string): string {
@@ -76,8 +44,8 @@ async function getGamesMessage(date: Date, label: string): Promise<string> {
   const buckets: Record<string, string[]> = {};
 
   for (const game of dates[0].games) {
-    const home = teamAbbreviations[game.teams.home.team.name] ?? game.teams.home.team.name;
-    const away = teamAbbreviations[game.teams.away.team.name] ?? game.teams.away.team.name;
+    const home = TEAM_ABBREVIATIONS[game.teams.home.team.name] ?? game.teams.home.team.name;
+    const away = TEAM_ABBREVIATIONS[game.teams.away.team.name] ?? game.teams.away.team.name;
     const status = game.status.detailedState;
     const awayScore = game.teams.away.score ?? game.linescore?.teams?.away?.runs ?? 0;
     const homeScore = game.teams.home.score ?? game.linescore?.teams?.home?.runs ?? 0;
