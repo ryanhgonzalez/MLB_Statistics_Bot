@@ -86,5 +86,6 @@ MIN @ TOR — Scheduled for 7:07 PM CT
 
 ---
 
-## 📜 License
-MIT
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
