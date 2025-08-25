@@ -1,51 +1,28 @@
 import { Bot, InlineKeyboard } from "grammy";
+import { formatToHourBucket, formatToChicagoTime } from "./formatters.js";
+import { buildGameScheduleMessage } from "./messages.js";
+import { TeamAbbreviations } from "./constants.js";
 import dotenv from "dotenv";
 import MLBStatsAPI from "mlb-stats-api";
-import { TEAM_ABBREVIATIONS } from "./constants.js";
 
 dotenv.config();
 const mlb = new MLBStatsAPI();
 const token = process.env.TELEGRAM_BOT_AUTH_TOKEN!;
 const bot = new Bot(token);
 
-// Format start time in CT and return hour bucket (e.g. "6 PM")
-function getHourBucket(dateStr: string): string {
-  const date = new Date(dateStr);
-  const options: Intl.DateTimeFormatOptions = 
-  { 
-    hour: "numeric", 
-    hour12: true, 
-    timeZone: "America/Chicago" 
-  };
-  return new Intl.DateTimeFormat("en-US", options).format(date); // e.g. "6 PM"
-}
-
-
-function formatGameTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const options: Intl.DateTimeFormatOptions = 
-  { 
-    hour: "numeric", 
-    minute: "2-digit", 
-    hour12: true, 
-    timeZone: "America/Chicago" 
-  };
-  return new Intl.DateTimeFormat("en-US", options).format(date); // e.g. "6:35 PM"
-}
-
 // Fetch games for a given date
-async function getGamesMessage(date: Date, label: string): Promise<string> {
+async function getGamesMessage(date: Date): Promise<string> {
   const dateStr = date.toISOString().split("T")[0];
   const response = await mlb.getSchedule({ params: { sportId: 1, date: dateStr } });
   const dates = response.data.dates;
-  if (!dates?.length) return `No MLB games ${label}.`;
+  if (!dates?.length) return `No MLB games`;
 
   // Bucket games by start hour
   const buckets: Record<string, string[]> = {};
 
   for (const game of dates[0].games) {
-    const home = TEAM_ABBREVIATIONS[game.teams.home.team.name] ?? game.teams.home.team.name;
-    const away = TEAM_ABBREVIATIONS[game.teams.away.team.name] ?? game.teams.away.team.name;
+    const home = TeamAbbreviations[game.teams.home.team.name] ?? game.teams.home.team.name;
+    const away = TeamAbbreviations[game.teams.away.team.name] ?? game.teams.away.team.name;
     const status = game.status.detailedState;
     const awayScore = game.teams.away.score ?? game.linescore?.teams?.away?.runs ?? 0;
     const homeScore = game.teams.home.score ?? game.linescore?.teams?.home?.runs ?? 0;
@@ -54,34 +31,20 @@ async function getGamesMessage(date: Date, label: string): Promise<string> {
     if (status === "Final" || status === "In Progress") {
       line = `\`${away} ${awayScore} @ ${home} ${homeScore} — ${status}\``;
     } else if (status === "Scheduled") {
-      const startTime = formatGameTime(game.gameDate);
+      const startTime = formatToChicagoTime(game.gameDate);
       line = `\`${away} @ ${home} — ${startTime}\``;
     } else {
       line = `\`${away} @ ${home} — ${status}\``;
     }
 
     // Group into hour bucket
-    const bucket = getHourBucket(game.gameDate);
+    const bucket = formatToHourBucket(game.gameDate);
     if (!buckets[bucket]) buckets[bucket] = [];
     buckets[bucket].push(line);
   }
 
   // Build message text
-  let message = `⚾ MLB Games for ${dateStr} (${label})\n\n`;
-  for (const bucket of Object.keys(buckets).sort((a, b) => {
-    // Sort by hour
-    const getHour = (t: string) => {
-      const [hour, ampm] = t.split(" ");
-      let h = parseInt(hour, 10);
-      if (ampm === "PM" && h !== 12) h += 12;
-      if (ampm === "AM" && h === 12) h = 0;
-      return h;
-    };
-    return getHour(a) - getHour(b);
-  })) {
-    message += `🕒 ${bucket} CT\n`;
-    message += buckets[bucket].join("\n") + "\n\n";
-  }
+  let message = buildGameScheduleMessage(dateStr, buckets);
 
   return message.trim();
 }
@@ -104,17 +67,15 @@ function buildKeyboard(date: Date): InlineKeyboard {
 // /start command
 bot.command("start", (ctx) => {
   const keyboard = new InlineKeyboard()
-    .text("Get Today's Scores", "scores")
-    .row()
-    .text("Get Player Stats", "player");
+    .text("Get Today's Schedule", "scores");
 
-  ctx.reply("Welcome to MLB Bot! Choose an option:", { reply_markup: keyboard });
+  ctx.reply("Welcome to the MLB Statistics Bot! Choose an option to get started:", { reply_markup: keyboard });
 });
 
 // "Get Today's Scores" button
 bot.callbackQuery("scores", async (ctx) => {
   await ctx.answerCallbackQuery();
-  const msg = await getGamesMessage(new Date(), "today");
+  const msg = await getGamesMessage(new Date());
   await ctx.reply(msg, { reply_markup: buildKeyboard(new Date()) });
 });
 
@@ -125,56 +86,11 @@ bot.on("callback_query:data", async (ctx) => {
 
   const dateStr = data.split(":")[1];
   const date = new Date(dateStr);
-  const label =
-    date.toDateString() === new Date().toDateString()
-      ? "today"
-      : date < new Date()
-      ? "yesterday"
-      : "upcoming";
 
-  const msg = await getGamesMessage(date, label);
+  const msg = await getGamesMessage(date);
   await ctx.editMessageText(msg, { reply_markup: buildKeyboard(date) });
   await ctx.answerCallbackQuery();
 });
 
-// "Get Player Stats" button
-bot.callbackQuery("player", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  ctx.reply("Send me a player name to fetch stats (e.g., Mike Trout).");
-});
-
-// Handle player name messages dynamically
-bot.on("message:text", async (ctx) => {
-  const playerName = ctx.message.text.trim();
-
-  try {
-    // Search for the player by name
-    const searchRes = await mlb.getPeople({ params: { name: playerName } });
-    const person = searchRes.data.people?.[0];
-    if (!person) {
-      ctx.reply(`Player "${playerName}" not found.`);
-      return;
-    }
-
-    // Fetch detailed player info
-    const playerRes = await mlb.getPerson({ pathParams: { personId: person.id } });
-    const player = playerRes.data.people?.[0];
-    if (!player) {
-      ctx.reply(`Player "${playerName}" not found in API.`);
-      return;
-    }
-
-    // Build stats message
-    let stats = `📊 Stats for ${player.fullName}\n`;
-    stats += `Team: ${player.currentTeam?.name ?? "N/A"}\n`;
-    stats += `Position: ${player.primaryPosition?.name ?? "N/A"}\n`;
-
-    ctx.reply(stats);
-  } catch (err) {
-    console.error(err);
-    ctx.reply("Failed to fetch player stats.");
-  }
-});
-
 bot.start();
-console.log("MLB Bot is running…");
+console.log("MLB Statistics Bot is running…");

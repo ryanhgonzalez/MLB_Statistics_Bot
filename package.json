@@ -12,8 +12,8 @@
     "mlb-stats-api": "^2.0.0"
   },
   "devDependencies": {
+    "@types/node": "^24.3.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2",
-    "@types/node": "^24.3.0"
+    "typescript": "^5.9.2"
   }
 }

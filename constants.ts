@@ -1,4 +1,4 @@
-export const TEAM_ABBREVIATIONS: Record<string, string> = {
+export const TeamAbbreviations: Record<string, string> = {
   "Boston Red Sox": "BOS",
   "New York Yankees": "NYY",
   "Tampa Bay Rays": "TB",
