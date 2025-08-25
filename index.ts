@@ -7,14 +7,62 @@ const mlb = new MLBStatsAPI();
 const token = process.env.TELEGRAM_BOT_AUTH_TOKEN!;
 const bot = new Bot(token);
 
-// Helper to format game time
-function formatGameTime(gameDate: string) {
-  const date = new Date(gameDate);
-  return date.toLocaleTimeString("en-US", {
-    timeZone: "America/New_York",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+const teamAbbreviations: Record<string, string> = {
+  "Boston Red Sox": "BOS",
+  "New York Yankees": "NYY",
+  "Tampa Bay Rays": "TB",
+  "Toronto Blue Jays": "TOR",
+  "Baltimore Orioles": "BAL",
+  "Washington Nationals": "WSH",
+  "Atlanta Braves": "ATL",
+  "Miami Marlins": "MIA",
+  "New York Mets": "NYM",
+  "Philadelphia Phillies": "PHI",
+  "Chicago White Sox": "CWS",
+  "Minnesota Twins": "MIN",
+  "Cleveland Guardians": "CLE",
+  "Detroit Tigers": "DET",
+  "Kansas City Royals": "KC",
+  "Cincinnati Reds": "CIN",
+  "St. Louis Cardinals": "STL",
+  "Pittsburgh Pirates": "PIT",
+  "Houston Astros": "HOU",
+  "Texas Rangers": "TEX",
+  "Los Angeles Angels": "LAA",
+  "Seattle Mariners": "SEA",
+  "Athletics": "ATH",
+  "Los Angeles Dodgers": "LAD",
+  "San Francisco Giants": "SF",
+  "San Diego Padres": "SD",
+  "Colorado Rockies": "COL",
+  "Arizona Diamondbacks": "ARI",
+  "Milwaukee Brewers": "MIL",
+  "Chicago Cubs": "CHC"
+};
+
+// Format start time in CT and return hour bucket (e.g. "6 PM")
+function getHourBucket(dateStr: string): string {
+  const date = new Date(dateStr);
+  const options: Intl.DateTimeFormatOptions = 
+  { 
+    hour: "numeric", 
+    hour12: true, 
+    timeZone: "America/Chicago" 
+  };
+  return new Intl.DateTimeFormat("en-US", options).format(date); // e.g. "6 PM"
+}
+
+
+function formatGameTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const options: Intl.DateTimeFormatOptions = 
+  { 
+    hour: "numeric", 
+    minute: "2-digit", 
+    hour12: true, 
+    timeZone: "America/Chicago" 
+  };
+  return new Intl.DateTimeFormat("en-US", options).format(date); // e.g. "6:35 PM"
 }
 
 // Fetch games for a given date
@@ -24,24 +72,50 @@ async function getGamesMessage(date: Date, label: string): Promise<string> {
   const dates = response.data.dates;
   if (!dates?.length) return `No MLB games ${label}.`;
 
-  let message = `⚾ MLB Games for ${dateStr} (${label})\n\n`;
+  // Bucket games by start hour
+  const buckets: Record<string, string[]> = {};
+
   for (const game of dates[0].games) {
-    const home = game.teams.home.team.name;
-    const away = game.teams.away.team.name;
+    const home = teamAbbreviations[game.teams.home.team.name] ?? game.teams.home.team.name;
+    const away = teamAbbreviations[game.teams.away.team.name] ?? game.teams.away.team.name;
     const status = game.status.detailedState;
     const awayScore = game.teams.away.score ?? game.linescore?.teams?.away?.runs ?? 0;
     const homeScore = game.teams.home.score ?? game.linescore?.teams?.home?.runs ?? 0;
 
+    let line: string;
     if (status === "Final" || status === "In Progress") {
-      message += `${away} (${awayScore}) @ ${home} (${homeScore}) — ${status}\n`;
+      line = `\`${away} ${awayScore} @ ${home} ${homeScore} — ${status}\``;
     } else if (status === "Scheduled") {
       const startTime = formatGameTime(game.gameDate);
-      message += `${away} @ ${home} — Scheduled for ${startTime} ET\n`;
+      line = `\`${away} @ ${home} — ${startTime}\``;
     } else {
-      message += `${away} @ ${home} — ${status}\n`;
+      line = `\`${away} @ ${home} — ${status}\``;
     }
+
+    // Group into hour bucket
+    const bucket = getHourBucket(game.gameDate);
+    if (!buckets[bucket]) buckets[bucket] = [];
+    buckets[bucket].push(line);
   }
-  return message;
+
+  // Build message text
+  let message = `⚾ MLB Games for ${dateStr} (${label})\n\n`;
+  for (const bucket of Object.keys(buckets).sort((a, b) => {
+    // Sort by hour
+    const getHour = (t: string) => {
+      const [hour, ampm] = t.split(" ");
+      let h = parseInt(hour, 10);
+      if (ampm === "PM" && h !== 12) h += 12;
+      if (ampm === "AM" && h === 12) h = 0;
+      return h;
+    };
+    return getHour(a) - getHour(b);
+  })) {
+    message += `🕒 ${bucket} CT\n`;
+    message += buckets[bucket].join("\n") + "\n\n";
+  }
+
+  return message.trim();
 }
 
 // Build navigation keyboard
