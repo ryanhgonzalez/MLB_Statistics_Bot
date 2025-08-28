@@ -80,18 +80,27 @@ export function buildTeamDetailsMessage(details: any): string {
   const gb = teamRecord.gamesBack ?? "N/A";
   const wcgb = teamRecord.wildCardGamesBack ?? "N/A";
   const streak = teamRecord.streak?.streakCode ?? "N/A";
-  const homeWins = teamRecord.home?.wins ?? "N/A";
-  const homeLosses = teamRecord.home?.losses ?? "N/A";
-  const awayWins = teamRecord.away?.wins ?? "N/A";
-  const awayLosses = teamRecord.away?.losses ?? "N/A";
   const divRank = teamRecord.divisionRank ?? "N/A";
   const leagueRank = teamRecord.leagueRank ?? "N/A";
   const runDiff = teamRecord.runDifferential ?? "N/A";
-  const lastTen = teamRecord.lastTen ?? "N/A";
+
+  // --- Pull splitRecords for home/away/lastTen ---
+  const splitRecords = teamRecord.records?.splitRecords ?? [];
+  const homeRecord = splitRecords.find((r: { type: string; }) => r.type === "home");
+  const awayRecord = splitRecords.find((r: { type: string; }) => r.type === "away");
+  const lastTenRecord = splitRecords.find((r: { type: string; }) => r.type === "lastTen");
+
+  const homeWins = homeRecord?.wins ?? "N/A";
+  const homeLosses = homeRecord?.losses ?? "N/A";
+  const awayWins = awayRecord?.wins ?? "N/A";
+  const awayLosses = awayRecord?.losses ?? "N/A";
+  const lastTenWins = lastTenRecord?.wins ?? "N/A";
+  const lastTenLosses = lastTenRecord?.losses ?? "N/A";
+  const lastTenPct = lastTenRecord?.pct ?? "N/A";
 
   return `📊 ${teamName} Stats
-🏆 League: ${leagueName}
-📍 Division: ${divisionName}
+🏆 League: ${leagueName ?? "N/A"}
+📍 Division: ${divisionName ?? "N/A"}
 
 💪 Record: ${wins}-${losses} (${wp})
 📊 Games Back: ${gb} | Wild Card GB: ${wcgb}
@@ -100,9 +109,10 @@ export function buildTeamDetailsMessage(details: any): string {
 ✈️ Away: ${awayWins}-${awayLosses}
 🏅 Division Rank: ${divRank}
 🏆 League Rank: ${leagueRank}
-⚡ Run Differential: ${runDiff}
-📅 Last 10: ${lastTen}`;
+⚡️ Run Differential: ${runDiff}
+📅 Last 10: ${lastTenWins}-${lastTenLosses} (${lastTenPct})`;
 }
+
 
 
 
