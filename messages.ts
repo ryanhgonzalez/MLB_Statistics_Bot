@@ -48,12 +48,29 @@ export function buildGamesScheduleMessage(dateStr: string, games: any[]): string
 
 // Fetch standings for a given league (103 = AL, 104 = NL)
 export function buildStandingsMessage(records: any[], date?: Date): string {
-  if (!records?.length) return `No standings data available${date ? " for " + date.toISOString().split("T")[0] : ""}.`;
+  if (!records?.length) {
+    return `No standings data available${date ? " for " + date.toISOString().split("T")[0] : ""}.`;
+  }
 
   let message = `📊 Standings ${date ? `(${date.toISOString().split("T")[0]})` : ""}\n\n`;
 
   for (const record of records) {
-    message += `🏆 ${record.division.name}\n`;
+    // Try to find division name via divisionId lookup
+    const divisionId = record.division?.id;
+    let divisionName = "Unknown Division";
+
+    if (divisionId && record.teamRecords?.length > 0) {
+      const sampleTeam = record.teamRecords[0];
+      const foundDivision = sampleTeam.records?.divisionRecords?.find(
+        (dr: any) => dr.division?.id === divisionId
+      );
+      if (foundDivision?.division?.name) {
+        divisionName = foundDivision.division.name;
+      }
+    }
+
+    message += `🏆 ${divisionName}\n`;
+
     for (const teamRecord of record.teamRecords) {
       const team = teamRecord.team.name;
       const wins = teamRecord.wins;
@@ -61,11 +78,14 @@ export function buildStandingsMessage(records: any[], date?: Date): string {
       const pct = teamRecord.winningPercentage;
       message += `   • ${team}: ${wins}-${losses} (${pct})\n`;
     }
+
     message += "\n";
   }
 
   return message.trim();
 }
+
+
 
 // messages.ts
 export function buildTeamDetailsMessage(details: any): string {

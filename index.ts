@@ -16,7 +16,10 @@ import {
   buildTeamsKeyboard,
 } from "./keyboards.js";
 
-import { MLBSportID } from "./constants.js";
+import { 
+  MLBSportID, 
+  successMessage, 
+} from "./constants.js";
 
 dotenv.config();
 const mlb = new MLBStatsAPI();
@@ -155,4 +158,4 @@ bot.on("callback_query:data", async (ctx) => {
 /* -------------------------------------------------------------------------- */
 
 bot.start();
-console.log("⚾ MLB Statistics Bot is running…");
+console.log(successMessage);

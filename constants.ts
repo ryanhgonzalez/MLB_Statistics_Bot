@@ -72,3 +72,17 @@ export const LeagueIDs: Record<string, string> = {
   "NL": '104'
 };
 
+export const successMessage = 
+`
+888b     d888 888      888888b.         .d8888b. 88888888888     d8888 88888888888 .d8888b.       888888b.    .d88888b. 88888888888 
+8888b   d8888 888      888  "88b       d88P  Y88b    888        d88888     888    d88P  Y88b      888  "88b  d88P" "Y88b    888     
+88888b.d88888 888      888  .88P       Y88b.         888       d88P888     888    Y88b.           888  .88P  888     888    888     
+888Y88888P888 888      8888888K.        "Y888b.      888      d88P 888     888     "Y888b.        8888888K.  888     888    888     
+888 Y888P 888 888      888  "Y88b          "Y88b.    888     d88P  888     888        "Y88b.      888  "Y88b 888     888    888     
+888  Y8P  888 888      888    888            "888    888    d88P   888     888          "888      888    888 888     888    888     
+888   "   888 888      888   d88P      Y88b  d88P    888   d8888888888     888    Y88b  d88P      888   d88P Y88b. .d88P    888     
+888       888 88888888 8888888P"        "Y8888P"     888  d88P     888     888     "Y8888P"       8888888P"   "Y88888P"     888     
+
+Application running... visit Telegram bot associated with configured api token to interact.
+`;
+
