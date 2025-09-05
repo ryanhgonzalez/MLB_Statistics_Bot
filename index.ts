@@ -151,6 +151,15 @@ bot.on("callback_query:data", async (ctx) => {
     return;
   }
 
+  /* ---------------------------- Back buttons ------------------------------- */
+  if (data.startsWith("back:")) {
+  const target = data.split(":")[1];
+  if (target === "start") {
+    await ctx.editMessageText("Welcome!", { reply_markup: buildStartKeyboard() });
+    await ctx.answerCallbackQuery();
+    return;
+  }
+}
 });
 
 /* -------------------------------------------------------------------------- */
