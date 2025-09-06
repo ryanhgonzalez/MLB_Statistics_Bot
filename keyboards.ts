@@ -6,7 +6,7 @@ export function buildStartKeyboard(): InlineKeyboard {
     return new InlineKeyboard()
         .text("Get Today's Schedule", "scores")
         .row()
-        .text("Get Latest Standings", "standings_menu")
+        .text("Get Latest Standings", "standings")
         .row()
         .text("Get Team Details", "teams");
 }
@@ -24,15 +24,6 @@ export function buildGamesScheduleKeyboard(date: Date): InlineKeyboard {
         .text("Tomorrow ➡", `games:${tomorrow.toISOString().split("T")[0]}`)
         .row()
         .text("🔄 Refresh", `refresh:${date.toISOString().split("T")[0]}`)
-        .row()
-        .text("⬅ Back", "back:start"); // Back to main menu
-}
-
-// Standings navigation keyboard + Back
-export function buildStandingsKeyboard(): InlineKeyboard {
-    return new InlineKeyboard()
-        .text("American League", `standings:${LeagueIDs["AL"]}`)
-        .text("National League", `standings:${LeagueIDs["NL"]}`)
         .row()
         .text("⬅ Back", "back:start"); // Back to main menu
 }

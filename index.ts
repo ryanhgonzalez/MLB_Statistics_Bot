@@ -11,12 +11,12 @@ import {
 
 import {
   buildGamesScheduleKeyboard,
-  buildStandingsKeyboard,
   buildStartKeyboard,
   buildTeamsKeyboard,
 } from "./keyboards.js";
 
 import { 
+  LeagueIDs,
   MLBSportID, 
   successMessage, 
 } from "./constants.js";
@@ -31,7 +31,7 @@ const bot = new Bot(token);
 /* -------------------------------------------------------------------------- */
 
 // Fetch games for a given date
-async function getGamesScheduleMessage(date: Date): Promise<string> {
+async function fetchGamesSchedule(date: Date): Promise<string> {
   const dateStr = date.toISOString().split("T")[0];
   const response = await mlb.getSchedule({
     params: { sportId: MLBSportID, date: dateStr },
@@ -42,7 +42,7 @@ async function getGamesScheduleMessage(date: Date): Promise<string> {
 }
 
 // Fetch league standings
-async function getLeagueStandings(leagueId: number, date?: Date) {
+async function fetchTeamStandings(leagueId: number, date?: Date) {
   const params: Record<string, any> = { leagueId };
   if (date) params.date = date.toISOString().split("T")[0];
 
@@ -65,9 +65,7 @@ export async function fetchTeamDetails(teamId: number) {
 
     if (teamRecord) {
       return {
-        teamRecord,
-        divisionName: division.division?.name ?? "N/A",
-        leagueName: division.league?.name ?? "N/A",
+        teamRecord      
       };
     }
   }
@@ -95,7 +93,7 @@ bot.on("callback_query:data", async (ctx) => {
 
   /* --------------------- Today's Schedule (main menu) --------------------- */
   if (data === "scores") {
-    const msg = await getGamesScheduleMessage(new Date());
+    const msg = await fetchGamesSchedule(new Date());
     await ctx.editMessageText(msg, { reply_markup: buildGamesScheduleKeyboard(new Date()) });
     await ctx.answerCallbackQuery();
     return;
@@ -105,29 +103,22 @@ bot.on("callback_query:data", async (ctx) => {
   if (data.startsWith("games:") || data.startsWith("refresh:")) {
     const dateStr = data.split(":")[1];
     const date = new Date(dateStr + "T00:00:00Z");
-    const msg = await getGamesScheduleMessage(date);
+    const msg = await fetchGamesSchedule(date);
     await ctx.editMessageText(msg, { reply_markup: buildGamesScheduleKeyboard(date) });
     await ctx.answerCallbackQuery();
     return;
   }
 
-  /* ---------------------------- Standings menu ----------------------------- */
-  if (data === "standings_menu") {
-    await ctx.editMessageText("Select a league:", {
-      reply_markup: buildStandingsKeyboard(),
-    });
-    await ctx.answerCallbackQuery();
-    return;
-  }
-
   /* ---------------------- Individual league standings ---------------------- */
-  if (data.startsWith("standings:")) {
-    const leagueId = parseInt(data.split(":")[1], 10);
-    const records = await getLeagueStandings(leagueId);
-    const msg = buildStandingsMessage(records);
-    await ctx.editMessageText(msg);
-    await ctx.answerCallbackQuery();
-    return;
+  if (data.startsWith("standings")) {
+  const alRecords = await fetchTeamStandings(Number(LeagueIDs["AL"]));
+  const nlRecords = await fetchTeamStandings(Number(LeagueIDs["NL"]));
+  const allRecords = [...alRecords, ...nlRecords];
+
+  const msg = buildStandingsMessage(allRecords, new Date());
+  await ctx.editMessageText(msg);
+  await ctx.answerCallbackQuery();
+  return;
   }
 
   /* ---------------------------- Teams menu --------------------------------- */

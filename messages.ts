@@ -46,16 +46,16 @@ export function buildGamesScheduleMessage(dateStr: string, games: any[]): string
   return message.trim();
 }
 
-// Fetch standings for a given league (103 = AL, 104 = NL)
 export function buildStandingsMessage(records: any[], date?: Date): string {
   if (!records?.length) {
-    return `No standings data available${date ? " for " + date.toISOString().split("T")[0] : ""}.`;
+    return `No standings data available${
+      date ? " for " + date.toISOString().split("T")[0] : ""
+    }.`;
   }
 
-  let message = `📊 Standings ${date ? `(${date.toISOString().split("T")[0]})` : ""}\n\n`;
+  let message = `📊 Latest Division Standings ${date ? `(${date.toISOString().split("T")[0]})` : ""}\n\n`;
 
   for (const record of records) {
-    // Try to find division name via divisionId lookup
     const divisionId = record.division?.id;
     let divisionName = "Unknown Division";
 
@@ -69,7 +69,7 @@ export function buildStandingsMessage(records: any[], date?: Date): string {
       }
     }
 
-    message += `🏆 ${divisionName}\n`;
+    message += `🏅 ${divisionName}\n`;
 
     for (const teamRecord of record.teamRecords) {
       const team = teamRecord.team.name;
@@ -86,12 +86,11 @@ export function buildStandingsMessage(records: any[], date?: Date): string {
 }
 
 
-
 // messages.ts
 export function buildTeamDetailsMessage(details: any): string {
   if (!details || !details.teamRecord) return "No data available for this team.";
 
-  const { teamRecord, divisionName, leagueName } = details;
+  const { teamRecord } = details;
 
   const teamName = teamRecord.team?.name ?? "Unknown Team";
   const wins = teamRecord.wins ?? "N/A";
@@ -119,18 +118,16 @@ export function buildTeamDetailsMessage(details: any): string {
   const lastTenPct = lastTenRecord?.pct ?? "N/A";
 
   return `📊 ${teamName} Stats
-🏆 League: ${leagueName ?? "N/A"}
-📍 Division: ${divisionName ?? "N/A"}
-
-💪 Record: ${wins}-${losses} (${wp})
-📊 Games Back: ${gb} | Wild Card GB: ${wcgb}
-🔥 Streak: ${streak}
-🏠 Home: ${homeWins}-${homeLosses}
-✈️ Away: ${awayWins}-${awayLosses}
-🏅 Division Rank: ${divRank}
-🏆 League Rank: ${leagueRank}
-⚡️ Run Differential: ${runDiff}
-📅 Last 10: ${lastTenWins}-${lastTenLosses} (${lastTenPct})`;
+  
+• Record: ${wins}-${losses} (${wp})
+• Games Back: ${gb} | Wild Card GB: ${wcgb}
+• Streak: ${streak}
+• Home: ${homeWins}-${homeLosses}
+• Away: ${awayWins}-${awayLosses}
+• Division Rank: ${divRank}
+• League Rank: ${leagueRank}
+• Run Differential: ${runDiff}
+• Last 10: ${lastTenWins}-${lastTenLosses} (${lastTenPct})`;
 }
 
 
