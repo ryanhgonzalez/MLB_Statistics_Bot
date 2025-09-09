@@ -1,5 +1,5 @@
 // messages.ts
-import { TeamAbbreviations } from "./constants.js";
+import { TeamAbbreviations, TeamNamesById } from "./constants.js";
 import { formatToHourBucket, formatToChicagoTime } from "./formatters.js";
 
 export function buildGamesScheduleMessage(dateStr: string, games: any[]): string {
@@ -14,13 +14,13 @@ export function buildGamesScheduleMessage(dateStr: string, games: any[]): string
     const homeScore = game.teams.home.score ?? game.linescore?.teams?.home?.runs ?? 0;
 
     let line: string;
-    if (status === "Final" || status === "In Progress") {
-      line = `\`${away} ${awayScore} @ ${home} ${homeScore} — ${status}\``;
-    } else if (status === "Scheduled") {
+    if (status === "Final" || status === "In Progress" || status === "Game Over") {
+      line = `• [${status}] ${away} ${awayScore} @ ${home} ${homeScore}`;
+    } else if (status === "Scheduled" || status === "Pre-Game") {
       const startTime = formatToChicagoTime(game.gameDate);
-      line = `\`${away} @ ${home} — ${startTime}\``;
+      line = `• [${status}] ${away} @ ${home} (${startTime})`;
     } else {
-      line = `\`${away} @ ${home} — ${status}\``;
+      line = `• [${status}] ${away} @ ${home}`;
     }
 
     const bucket = formatToHourBucket(game.gameDate);
@@ -39,7 +39,7 @@ export function buildGamesScheduleMessage(dateStr: string, games: any[]): string
     };
     return getHour(a) - getHour(b);
   })) {
-    message += `🕒 ${bucket} CT\n`;
+    message += `${bucket} CT\n`;
     message += buckets[bucket].join("\n") + "\n\n";
   }
 
@@ -129,6 +129,37 @@ export function buildTeamDetailsMessage(details: any): string {
 • Run Differential: ${runDiff}
 • Last 10: ${lastTenWins}-${lastTenLosses} (${lastTenPct})`;
 }
+
+export function buildTeamRosterMessage(teamId: number, rosterData: any): string {
+  const teamName = TeamNamesById[teamId] ?? `Team ${teamId}`;
+  const roster = rosterData?.roster ?? [];
+
+  if (!roster.length) {
+    return `No active roster found for ${teamName}.`;
+  }
+
+  // Group players by position type
+  const grouped: Record<string, any[]> = {};
+  for (const player of roster) {
+    const pos = player.position?.type ?? "Unknown";
+    if (!grouped[pos]) grouped[pos] = [];
+    grouped[pos].push(player);
+  }
+
+  let message = `📋 Roster for ${teamName} (${rosterData.rosterType?.toUpperCase() ?? "UNKNOWN"})\n\n`;
+
+  for (const [position, players] of Object.entries(grouped)) {
+    message += `🏅 ${position}\n`;
+    for (const p of players) {
+      message += `• #${p.jerseyNumber ?? "??"} ${p.person?.fullName ?? "Unknown"} (${p.position?.abbreviation ?? ""})\n`;
+    }
+    message += "\n";
+  }
+
+  return message.trim();
+}
+
+
 
 
 

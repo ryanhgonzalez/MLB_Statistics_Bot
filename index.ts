@@ -7,10 +7,12 @@ import {
   buildGamesScheduleMessage,
   buildStandingsMessage,
   buildTeamDetailsMessage,
+  buildTeamRosterMessage,
 } from "./messages.js";
 
 import {
   buildGamesScheduleKeyboard,
+  buildRosterKeyboard,
   buildStartKeyboard,
   buildTeamsKeyboard,
 } from "./keyboards.js";
@@ -30,7 +32,6 @@ const bot = new Bot(token);
 /*                                API Methods                                 */
 /* -------------------------------------------------------------------------- */
 
-// Fetch games for a given date
 async function fetchGamesSchedule(date: Date): Promise<string> {
   const dateStr = date.toISOString().split("T")[0];
   const response = await mlb.getSchedule({
@@ -41,7 +42,6 @@ async function fetchGamesSchedule(date: Date): Promise<string> {
   return buildGamesScheduleMessage(dateStr, dates[0].games).trim();
 }
 
-// Fetch league standings
 async function fetchTeamStandings(leagueId: number, date?: Date) {
   const params: Record<string, any> = { leagueId };
   if (date) params.date = date.toISOString().split("T")[0];
@@ -50,9 +50,7 @@ async function fetchTeamStandings(leagueId: number, date?: Date) {
   return response.data.records ?? [];
 }
 
-// Fetch single team stats
 export async function fetchTeamDetails(teamId: number) {
-  // Get AL and NL standings
   const standingsAL = await mlb.getStandings({ params: { leagueId: 103 } });
   const standingsNL = await mlb.getStandings({ params: { leagueId: 104 } });
 
@@ -70,10 +68,17 @@ export async function fetchTeamDetails(teamId: number) {
     }
   }
 
-  return null; // Team not found
+  return null;
 }
 
+export async function fetchTeamRoster(teamId: number) {
+  const response = await mlb.getTeamRoster({
+    pathParams: { teamId }
+  });
 
+  // If the library nests under `.data`, unwrap here
+  return response.data ?? response;
+}
 
 
 /* -------------------------------------------------------------------------- */
@@ -142,11 +147,32 @@ bot.on("callback_query:data", async (ctx) => {
     return;
   }
 
+  /* ---------------------------- Roster menu --------------------------------- */
+  if (data === "rosters") {
+    await ctx.reply("Select a team to view detailed roster information:", {
+      reply_markup: buildRosterKeyboard(),
+    });
+    await ctx.answerCallbackQuery();
+    return;
+  }
+
+  /* ---------------------------- Roster details ------------------------------- */
+  if (data.startsWith("roster:")) {
+    const teamId = parseInt(data.split(":")[1], 10);
+
+    const details = await fetchTeamRoster(teamId);
+    const msg = buildTeamRosterMessage(teamId, details);
+
+    await ctx.editMessageText(msg);
+    await ctx.answerCallbackQuery();
+    return;
+  }
+
   /* ---------------------------- Back buttons ------------------------------- */
   if (data.startsWith("back:")) {
   const target = data.split(":")[1];
   if (target === "start") {
-    await ctx.editMessageText("Welcome!", { reply_markup: buildStartKeyboard() });
+    await ctx.editMessageText("Welcome to the MLB Statistics Bot! Choose an option to get started:", { reply_markup: buildStartKeyboard() });
     await ctx.answerCallbackQuery();
     return;
   }

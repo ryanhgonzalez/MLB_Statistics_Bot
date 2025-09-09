@@ -1,5 +1,5 @@
 import { InlineKeyboard } from "grammy";
-import { LeagueIDs, TeamIDs } from "./constants.js";
+import { TeamIDs } from "./constants.js";
 
 // Start menu keyboard
 export function buildStartKeyboard(): InlineKeyboard {
@@ -8,7 +8,9 @@ export function buildStartKeyboard(): InlineKeyboard {
         .row()
         .text("Get Latest Standings", "standings")
         .row()
-        .text("Get Team Details", "teams");
+        .text("Get Team Details", "teams")
+        .row()
+        .text("Get Team Roster", "rosters");
 }
 
 // Schedule navigation keyboard (Yesterday/Today/Tomorrow/Refresh) + Back
@@ -19,13 +21,9 @@ export function buildGamesScheduleKeyboard(date: Date): InlineKeyboard {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     return new InlineKeyboard()
-        .text("⬅ Yesterday", `games:${yesterday.toISOString().split("T")[0]}`)
-        .text("Today", `games:${new Date().toISOString().split("T")[0]}`)
-        .text("Tomorrow ➡", `games:${tomorrow.toISOString().split("T")[0]}`)
+        .text("Refresh", `refresh:${date.toISOString().split("T")[0]}`)
         .row()
-        .text("🔄 Refresh", `refresh:${date.toISOString().split("T")[0]}`)
-        .row()
-        .text("⬅ Back", "back:start"); // Back to main menu
+        .text("Back", "back:start");
 }
 
 // Teams keyboard + Back
@@ -33,8 +31,19 @@ export function buildTeamsKeyboard(): InlineKeyboard {
     const kb = new InlineKeyboard();
     Object.keys(TeamIDs).forEach((teamName, i) => {
         kb.text(teamName, `team:${TeamIDs[teamName]}`);
-        if ((i + 1) % 2 === 0) kb.row(); // 2 columns
+        if ((i + 1) % 2 === 0) kb.row();
     });
-    kb.row().text("⬅ Back", "back:start"); // Back to main menu
+    kb.row().text("Back", "back:start");
+    return kb;
+}
+
+// Roster keyboard + Back
+export function buildRosterKeyboard(): InlineKeyboard {
+    const kb = new InlineKeyboard();
+    Object.keys(TeamIDs).forEach((teamName, i) => {
+        kb.text(teamName, `roster:${TeamIDs[teamName]}`);
+        if ((i + 1) % 2 === 0) kb.row();
+    });
+    kb.row().text("Back", "back:start");
     return kb;
 }

@@ -66,6 +66,9 @@ export const TeamIDs: Record<string, number> = {
   "Washington Nationals": 120
 };
 
+export const TeamNamesById: Record<number, string> = Object.fromEntries(
+  Object.entries(TeamIDs).map(([name, id]) => [id, name])
+);
 
 export const LeagueIDs: Record<string, string> = {
   "AL": '103',
