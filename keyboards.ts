@@ -47,3 +47,8 @@ export function buildRosterKeyboard(): InlineKeyboard {
     kb.row().text("Back", "back:start");
     return kb;
 }
+
+export function buildGenericBackKeyboard(): InlineKeyboard {
+    return new InlineKeyboard()
+        .text("Back", "back:start");
+}

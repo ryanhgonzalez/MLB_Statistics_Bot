@@ -12,6 +12,7 @@ import {
 
 import {
   buildGamesScheduleKeyboard,
+  buildGenericBackKeyboard,
   buildRosterKeyboard,
   buildStartKeyboard,
   buildTeamsKeyboard,
@@ -121,7 +122,7 @@ bot.on("callback_query:data", async (ctx) => {
   const allRecords = [...alRecords, ...nlRecords];
 
   const msg = buildStandingsMessage(allRecords, new Date());
-  await ctx.editMessageText(msg);
+  await ctx.editMessageText(msg, {reply_markup: buildGenericBackKeyboard() });
   await ctx.answerCallbackQuery();
   return;
   }
@@ -142,7 +143,7 @@ bot.on("callback_query:data", async (ctx) => {
     const details = await fetchTeamDetails(teamId);
     const msg = buildTeamDetailsMessage(details);
 
-    await ctx.editMessageText(msg);
+    await ctx.editMessageText(msg, {reply_markup: buildGenericBackKeyboard() });
     await ctx.answerCallbackQuery();
     return;
   }
@@ -163,7 +164,7 @@ bot.on("callback_query:data", async (ctx) => {
     const details = await fetchTeamRoster(teamId);
     const msg = buildTeamRosterMessage(teamId, details);
 
-    await ctx.editMessageText(msg);
+    await ctx.editMessageText(msg, {reply_markup: buildGenericBackKeyboard() });
     await ctx.answerCallbackQuery();
     return;
   }

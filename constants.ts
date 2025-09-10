@@ -88,4 +88,3 @@ export const successMessage =
 
 Application running... visit Telegram bot associated with configured api token to interact.
 `;
-
