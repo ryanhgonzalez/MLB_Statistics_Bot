@@ -11,6 +11,7 @@ import {
 } from "./messages.js";
 
 import {
+  buildBackKeyboard,
   buildGamesScheduleKeyboard,
   buildGenericBackKeyboard,
   buildRosterKeyboard,
@@ -117,19 +118,19 @@ bot.on("callback_query:data", async (ctx) => {
 
   /* ---------------------- Individual league standings ---------------------- */
   if (data.startsWith("standings")) {
-  const alRecords = await fetchTeamStandings(Number(LeagueIDs["AL"]));
-  const nlRecords = await fetchTeamStandings(Number(LeagueIDs["NL"]));
-  const allRecords = [...alRecords, ...nlRecords];
+    const alRecords = await fetchTeamStandings(Number(LeagueIDs["AL"]));
+    const nlRecords = await fetchTeamStandings(Number(LeagueIDs["NL"]));
+    const allRecords = [...alRecords, ...nlRecords];
 
-  const msg = buildStandingsMessage(allRecords, new Date());
-  await ctx.editMessageText(msg, {reply_markup: buildGenericBackKeyboard() });
-  await ctx.answerCallbackQuery();
-  return;
+    const msg = buildStandingsMessage(allRecords, new Date());
+    await ctx.editMessageText(msg, { reply_markup: buildBackKeyboard("start") });
+    await ctx.answerCallbackQuery();
+    return;
   }
 
   /* ---------------------------- Teams menu --------------------------------- */
   if (data === "teams") {
-    await ctx.reply("Select a team to view detailed stats:", {
+    await ctx.editMessageText("Select a team to view detailed stats:", {
       reply_markup: buildTeamsKeyboard(),
     });
     await ctx.answerCallbackQuery();
@@ -139,18 +140,17 @@ bot.on("callback_query:data", async (ctx) => {
   /* ---------------------------- Team details ------------------------------- */
   if (data.startsWith("team:")) {
     const teamId = parseInt(data.split(":")[1], 10);
-
     const details = await fetchTeamDetails(teamId);
     const msg = buildTeamDetailsMessage(details);
 
-    await ctx.editMessageText(msg, {reply_markup: buildGenericBackKeyboard() });
+    await ctx.editMessageText(msg, { reply_markup: buildBackKeyboard("teams") });
     await ctx.answerCallbackQuery();
     return;
   }
 
   /* ---------------------------- Roster menu --------------------------------- */
   if (data === "rosters") {
-    await ctx.reply("Select a team to view detailed roster information:", {
+    await ctx.editMessageText("Select a team to view detailed roster information:", {
       reply_markup: buildRosterKeyboard(),
     });
     await ctx.answerCallbackQuery();
@@ -160,24 +160,36 @@ bot.on("callback_query:data", async (ctx) => {
   /* ---------------------------- Roster details ------------------------------- */
   if (data.startsWith("roster:")) {
     const teamId = parseInt(data.split(":")[1], 10);
-
     const details = await fetchTeamRoster(teamId);
     const msg = buildTeamRosterMessage(teamId, details);
 
-    await ctx.editMessageText(msg, {reply_markup: buildGenericBackKeyboard() });
+    await ctx.editMessageText(msg, { reply_markup: buildBackKeyboard("rosters") });
     await ctx.answerCallbackQuery();
     return;
   }
 
   /* ---------------------------- Back buttons ------------------------------- */
   if (data.startsWith("back:")) {
-  const target = data.split(":")[1];
-  if (target === "start") {
-    await ctx.editMessageText("Welcome to the MLB Statistics Bot! Choose an option to get started:", { reply_markup: buildStartKeyboard() });
+    const target = data.split(":")[1];
+
+    if (target === "start") {
+      await ctx.editMessageText(
+        "Welcome to the MLB Statistics Bot! Choose an option to get started:",
+        { reply_markup: buildStartKeyboard() }
+      );
+    } else if (target === "teams") {
+      await ctx.editMessageText("Select a team to view detailed stats:", {
+        reply_markup: buildTeamsKeyboard(),
+      });
+    } else if (target === "rosters") {
+      await ctx.editMessageText("Select a team to view detailed roster information:", {
+        reply_markup: buildRosterKeyboard(),
+      });
+    }
+
     await ctx.answerCallbackQuery();
     return;
   }
-}
 });
 
 /* -------------------------------------------------------------------------- */

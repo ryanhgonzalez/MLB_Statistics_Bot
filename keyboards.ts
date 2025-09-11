@@ -52,3 +52,7 @@ export function buildGenericBackKeyboard(): InlineKeyboard {
     return new InlineKeyboard()
         .text("Back", "back:start");
 }
+
+export function buildBackKeyboard(target: "start" | "teams" | "rosters"): InlineKeyboard {
+  return new InlineKeyboard().text("Back", `back:${target}`);
+}
