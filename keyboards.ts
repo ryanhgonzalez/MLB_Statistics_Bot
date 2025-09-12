@@ -4,13 +4,13 @@ import { TeamIDs } from "./constants.js";
 // Start menu keyboard
 export function buildStartKeyboard(): InlineKeyboard {
     return new InlineKeyboard()
-        .text("Get Today's Schedule", "scores")
-        .row()
         .text("Get Latest Standings", "standings")
         .row()
         .text("Get Team Details", "teams")
         .row()
-        .text("Get Team Roster", "rosters");
+        .text("Get Team Roster", "rosters")
+        .row()
+        .text("Get Today's Schedule", "scores");
 }
 
 // Schedule navigation keyboard (Yesterday/Today/Tomorrow/Refresh) + Back
@@ -46,11 +46,6 @@ export function buildRosterKeyboard(): InlineKeyboard {
     });
     kb.row().text("Back", "back:start");
     return kb;
-}
-
-export function buildGenericBackKeyboard(): InlineKeyboard {
-    return new InlineKeyboard()
-        .text("Back", "back:start");
 }
 
 export function buildBackKeyboard(target: "start" | "teams" | "rosters"): InlineKeyboard {
