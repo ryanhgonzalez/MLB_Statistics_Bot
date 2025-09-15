@@ -26,26 +26,16 @@ export function buildGamesScheduleKeyboard(date: Date): InlineKeyboard {
         .text("Back", "back:start");
 }
 
-// Teams keyboard + Back
-export function buildTeamsKeyboard(): InlineKeyboard {
-    const kb = new InlineKeyboard();
-    Object.keys(TeamIDs).forEach((teamName, i) => {
-        kb.text(teamName, `team:${TeamIDs[teamName]}`);
-        if ((i + 1) % 2 === 0) kb.row();
-    });
-    kb.row().text("Back", "back:start");
-    return kb;
-}
+export function buildFranchiseKeyboard(prefix: string): InlineKeyboard {
+  const kb = new InlineKeyboard();
 
-// Roster keyboard + Back
-export function buildRosterKeyboard(): InlineKeyboard {
-    const kb = new InlineKeyboard();
-    Object.keys(TeamIDs).forEach((teamName, i) => {
-        kb.text(teamName, `roster:${TeamIDs[teamName]}`);
-        if ((i + 1) % 2 === 0) kb.row();
-    });
-    kb.row().text("Back", "back:start");
-    return kb;
+  Object.entries(TeamIDs).forEach(([teamName, teamId], i) => {
+    kb.text(teamName, `${prefix}:${teamId}`);
+    if ((i + 1) % 2 === 0) kb.row();
+  });
+
+  kb.row().text("Back", "back:start");
+  return kb;
 }
 
 export function buildBackKeyboard(target: "start" | "teams" | "rosters"): InlineKeyboard {

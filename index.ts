@@ -12,55 +12,26 @@ import {
 
 import {
   buildBackKeyboard,
+  buildFranchiseKeyboard,
   buildGamesScheduleKeyboard,
-  buildRosterKeyboard,
   buildStartKeyboard,
-  buildTeamsKeyboard,
 } from "./keyboards.js";
 
-import { LeagueIDs, MLBSportID, successMessage } from "./constants.js";
+import { 
+  LeagueIDs, 
+  successMessage
+} from "./constants.js";
+
+import {
+  fetchTeamStandings,
+  fetchTeamDetails,
+  fetchTeamRoster,
+  fetchGamesSchedule
+} from "./fetchers.js"
 
 dotenv.config();
 const mlb = new MLBStatsAPI();
 const bot = new Bot(process.env.TELEGRAM_BOT_AUTH_TOKEN!);
-
-/* -------------------------------------------------------------------------- */
-/*                               API Fetchers                                 */
-/* -------------------------------------------------------------------------- */
-
-async function fetchGamesSchedule(date: Date) {
-  const dateStr = date.toISOString().split("T")[0];
-  const response = await mlb.getSchedule({ params: { sportId: MLBSportID, date: dateStr } });
-  const dates = response.data.dates;
-  if (!dates?.length) return `No MLB games scheduled for ${dateStr}.`;
-  return buildGamesScheduleMessage(dateStr, dates[0].games).trim();
-}
-
-async function fetchTeamStandings(leagueId: number, date?: Date) {
-  const params: Record<string, any> = { leagueId };
-  if (date) params.date = date.toISOString().split("T")[0];
-  const response = await mlb.getStandings({ params });
-  return response.data.records ?? [];
-}
-
-async function fetchTeamDetails(teamId: number) {
-  const [al, nl] = await Promise.all([
-    mlb.getStandings({ params: { leagueId: LeagueIDs.AL } }),
-    mlb.getStandings({ params: { leagueId: LeagueIDs.NL } }),
-  ]);
-
-  const allRecords = [...(al.data.records ?? []), ...(nl.data.records ?? [])];
-  for (const division of allRecords) {
-    const teamRecord = division.teamRecords?.find((tr: any) => tr.team?.id === teamId);
-    if (teamRecord) return { teamRecord };
-  }
-  return null;
-}
-
-async function fetchTeamRoster(teamId: number) {
-  const response = await mlb.getTeamRoster({ pathParams: { teamId } });
-  return response.data ?? response;
-}
 
 /* -------------------------------------------------------------------------- */
 /*                              Helper functions                              */
@@ -77,7 +48,10 @@ async function updateMessage(ctx: any, text: string, keyboard: any) {
 
 const handlers: Record<string, (ctx: any, data: string) => Promise<void>> = {
   scores: async (ctx) => {
-    const msg = await fetchGamesSchedule(new Date());
+    const { dateStr, games } = await fetchGamesSchedule(new Date());
+    const msg = games.length
+      ? buildGamesScheduleMessage(dateStr, games).trim()
+      : `No MLB games scheduled for ${dateStr}.`;
     await updateMessage(ctx, msg, buildGamesScheduleKeyboard(new Date()));
   },
 
@@ -91,14 +65,14 @@ const handlers: Record<string, (ctx: any, data: string) => Promise<void>> = {
   },
 
   teams: async (ctx) => {
-    await updateMessage(ctx, "Select a team to view detailed stats:", buildTeamsKeyboard());
+    await updateMessage(ctx, "Select a team to view detailed stats:", buildFranchiseKeyboard("team"));
   },
 
   rosters: async (ctx) => {
     await updateMessage(
       ctx,
       "Select a team to view detailed roster information:",
-      buildRosterKeyboard()
+      buildFranchiseKeyboard("roster")
     );
   },
 };
@@ -122,8 +96,12 @@ bot.on("callback_query:data", async (ctx) => {
   // Games navigation
   if (data.startsWith("games:") || data.startsWith("refresh:")) {
     const dateStr = data.split(":")[1];
+    // keep using UTC day parsing to be consistent with other code
     const date = new Date(`${dateStr}T00:00:00Z`);
-    const msg = await fetchGamesSchedule(date);
+    const { dateStr: fetchedDateStr, games } = await fetchGamesSchedule(date);
+    const msg = games.length
+      ? buildGamesScheduleMessage(fetchedDateStr, games).trim()
+      : `No MLB games scheduled for ${fetchedDateStr}.`;
     return updateMessage(ctx, msg, buildGamesScheduleKeyboard(date));
   }
 
@@ -153,12 +131,12 @@ bot.on("callback_query:data", async (ctx) => {
         buildStartKeyboard()
       );
     if (target === "teams")
-      return updateMessage(ctx, "Select a team to view detailed stats:", buildTeamsKeyboard());
+      return updateMessage(ctx, "Select a team to view detailed stats:", buildFranchiseKeyboard("team"));
     if (target === "rosters")
       return updateMessage(
         ctx,
         "Select a team to view detailed roster information:",
-        buildRosterKeyboard()
+        buildFranchiseKeyboard("roster")
       );
   }
 });
